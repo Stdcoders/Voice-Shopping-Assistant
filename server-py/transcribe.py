@@ -30,8 +30,6 @@ async def transcribe_audio(audio_bytes: bytes, original_name: str = "audio.webm"
                 response_format="text",
             )
 
-        # response_format "text" returns a plain string from the SDK;
-        # fall back to .text in case a structured object comes back instead.
         text = transcription if isinstance(transcription, str) else getattr(transcription, "text", "")
         return (text or "").strip()
     finally:
