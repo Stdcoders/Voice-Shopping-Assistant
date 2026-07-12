@@ -43,9 +43,6 @@ def _find_match(name, unit):
 
 
 def _find_by_name_any_unit(name):
-    # Matches by name only, ignoring unit — used for corrections ("make it
-    # 2 litres") and removals ("delete orange juice"), since neither
-    # naturally restates the item's original unit.
     row = _conn.execute(
         """SELECT * FROM shopping_list
            WHERE LOWER(name) = ?
@@ -54,9 +51,6 @@ def _find_by_name_any_unit(name):
         (_normalize(name),),
     ).fetchone()
     return dict(row) if row else None
-
-
-# action: "add" — quantity defaults to 1 if not specified by the LLM
 def add_item(command: dict):
     item = command.get("item")
     quantity = command.get("quantity")
@@ -81,18 +75,13 @@ def add_item(command: dict):
     _conn.commit()
     return get_all_items()
 
-
-# action: "remove" — no quantity specified means remove the item entirely;
-# a specified quantity decrements, deleting once it hits zero or below.
-# Matches by name only (ignoring unit) — a user saying "remove orange juice"
-# won't necessarily restate the unit it was added with (e.g. "bottle").
 def remove_item(command: dict):
     item = command.get("item")
     quantity = command.get("quantity")
 
     existing = _find_by_name_any_unit(item)
     if not existing:
-        return get_all_items()  # nothing to remove, silent no-op
+        return get_all_items()  
 
     if quantity is None or quantity >= existing["quantity"]:
         _conn.execute("DELETE FROM shopping_list WHERE id = ?", (existing["id"],))
@@ -106,12 +95,6 @@ def remove_item(command: dict):
     _conn.commit()
     return get_all_items()
 
-
-# action: "update" — a contextual correction (e.g. "make it 2 litres").
-# Sets quantity/unit directly rather than incrementing. Matches the exact
-# behavior already tested in the Node version: unit is always overwritten
-# with whatever the LLM returns (even null), quantity falls back to the
-# existing value only when the LLM didn't return one.
 def update_item(command: dict):
     item = command.get("item")
     quantity = command.get("quantity")
