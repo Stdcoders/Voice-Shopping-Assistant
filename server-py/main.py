@@ -52,6 +52,20 @@ def _item_name(item: dict) -> str:
     return item.get("name") or item.get("item") or ""
 
 
+def _needs_item(command: dict) -> bool:
+    """
+    add/update/remove all require a concrete item name. If the LLM couldn't
+    extract one (e.g. "remove everything from the list" — there's no single
+    item to resolve), item comes back as None/"" and must not be allowed to
+    flow into db.*/history.log_event(), which assume a real string.
+    """
+    action = command.get("action")
+    if action not in ("add", "update", "remove"):
+        return False
+    item = command.get("item")
+    return not item or not str(item).strip()
+
+
 def apply_command(command: dict):
     """
     Applies a parsed command to the DB, updates the "last command" context for
@@ -96,6 +110,12 @@ def apply_command(command: dict):
         )
         return result_list
 
+    if action == "clear":
+        result_list = db.clear_list()
+        context.clear_last_command()  # list is empty, nothing left to correct
+        history.log_event("__all__", action="clear")
+        return result_list
+
     # "list" or "unknown"
     return db.get_all_items()
 
@@ -105,10 +125,24 @@ def handle_search(command: dict) -> List[dict]:
     Search is read-only: it queries the product catalog and never touches
     the shopping list, correction context, or history log.
     """
+    category = command.get("category")
+    if command.get("item"):
+        # The prompt tells the LLM to leave "category" null when a specific
+        # item is named (query alone should carry the search), but it
+        # doesn't always comply — it sometimes fills in a best-guess category
+        # anyway. That gets AND'd with the query filter in catalog.search(),
+        # and if the guessed category string doesn't exactly match how the
+        # catalog actually categorizes that product, it wrongly excludes
+        # real matches (e.g. "toothpaste" + guessed category "household"
+        # returning zero results even though toothpaste exists under a
+        # different category). Ignoring category whenever a specific item
+        # was searched enforces the intended behavior in code.
+        category = None
+
     return catalog.search(
         query=command.get("item"),
         brand=command.get("brand"),
-        category=command.get("category"),
+        category=category,
         min_price=command.get("min_price"),
         max_price=command.get("max_price"),
         organic=command.get("organic"),
@@ -147,6 +181,14 @@ async def voice_command(audio: UploadFile = File(...)):
             results = handle_search(command)
             return {"transcript": transcript, **command, "results": results}
 
+        if _needs_item(command):
+            return {
+                "transcript": transcript,
+                **command,
+                "message": "I didn't catch a specific item — try naming it, e.g. \"remove milk\".",
+                "list": db.get_all_items(),
+            }
+
         result_list = apply_command(command)
 
         return {"transcript": transcript, **command, "list": result_list}
@@ -174,6 +216,14 @@ async def parse_text(payload: dict = Body(...)):
         if command.get("action") == "search":
             results = handle_search(command)
             return {"transcript": transcript, **command, "results": results}
+
+        if _needs_item(command):
+            return {
+                "transcript": transcript,
+                **command,
+                "message": "I didn't catch a specific item — try naming it, e.g. \"remove milk\".",
+                "list": db.get_all_items(),
+            }
 
         result_list = apply_command(command)
         return {"transcript": transcript, **command, "list": result_list}

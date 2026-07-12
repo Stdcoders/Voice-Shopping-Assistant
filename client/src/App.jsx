@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import MicButton from "./components/MicButton.jsx";
 import ShoppingList from "./components/ShoppingList.jsx";
 import TranscriptDisplay from "./components/TranscriptDisplay.jsx";
+import RecommendationsPanel from "./components/RecommendationsPanel.jsx";
+import SearchPanel from "./components/SearchPanel.jsx";
 import { sendVoiceCommand, fetchItems } from "./api.js";
 
 export default function App() {
@@ -9,6 +11,13 @@ export default function App() {
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | processing | error
   const [errorMessage, setErrorMessage] = useState("");
+  // Bumped whenever the list changes via voice, forcing RecommendationsPanel
+  // to remount and refetch — keeps suggestions in sync with the live list.
+  const [refreshKey, setRefreshKey] = useState(0);
+  // Results from a voice/text command with action === "search" (e.g.
+  // "find toothpaste under $5"). Passed down into SearchPanel so it can
+  // show them alongside its own manual-filter search results.
+  const [voiceSearchResults, setVoiceSearchResults] = useState(null);
 
   // Hydrate the list from SQLite on first load / refresh.
   useEffect(() => {
@@ -51,10 +60,15 @@ export default function App() {
         );
       }
 
-      // Server already applied the command to SQLite and returns the
-      // full, up-to-date list — just trust it, no client-side merging.
-      if (result.list) {
+      // Search commands return { results }, not { list } — route them to
+      // SearchPanel instead of trying to treat them as a list update.
+      if (result.action === "search") {
+        setVoiceSearchResults(result.results || []);
+      } else if (result.list) {
+        // Server already applied the command to SQLite and returns the
+        // full, up-to-date list — just trust it, no client-side merging.
         setItems(result.list);
+        setRefreshKey((k) => k + 1); // list changed via voice — refresh suggestions too
       }
 
       setStatus("idle");
@@ -90,6 +104,10 @@ export default function App() {
       />
 
       <ShoppingList items={items} />
+
+      <RecommendationsPanel key={refreshKey} onListUpdate={setItems} />
+
+      <SearchPanel voiceResults={voiceSearchResults} onListUpdate={setItems} />
     </div>
   );
 }

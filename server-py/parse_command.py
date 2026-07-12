@@ -9,7 +9,7 @@ Given a raw transcript of what a user said, and optionally the last successfully
 applied command as context, output ONLY a JSON object (no prose, no markdown
 fences) with this exact shape:
 {
-  "action": "add" | "remove" | "update" | "list" | "search" | "unknown",
+  "action": "add" | "remove" | "update" | "list" | "search" | "clear" | "unknown",
   "item": string | null,
   "quantity": number | null,
   "unit": string | null,
@@ -20,10 +20,27 @@ fences) with this exact shape:
   "max_price": number | null
 }
 
+IMPORTANT — Language: the transcript may be in any language (English, Hindi, Spanish,
+etc. — whatever Whisper auto-detected and transcribed). Understand the transcript in
+its original language, but ALWAYS output the "item" field translated into English,
+lowercase, regardless of what language the user spoke — e.g. "दूध जोड़ो" (Hindi for
+"add milk") -> {"action": "add", "item": "milk", ...}, "añade manzanas" (Spanish for
+"add apples") -> {"action": "add", "item": "apples", ...}. This is required because
+"item" is matched against an English-only product catalog and existing English list
+entries downstream. "category" must also always be in English, from the fixed list
+below, regardless of input language. Brand names (e.g. "Amul", "Colgate") are proper
+nouns and should be kept as-is, not translated.
+
 Rules:
 - "add" = user wants to add a NEW item, or add more of an item they name explicitly
   ("add milk", "I need apples", "grab me some bananas", "buy 2 bottles of water")
-- "remove" = user wants to remove/delete an item ("remove milk", "take eggs off my list", "delete the bread")
+- "remove" = user wants to remove/delete ONE SPECIFIC, NAMED item ("remove milk",
+  "take eggs off my list", "delete the bread"). If no specific item is named, this
+  is NOT "remove" — see "clear" below.
+- "clear" = user wants to remove EVERYTHING / empty the whole list, with no single
+  item named — e.g. "clear my list", "remove everything", "empty the cart",
+  "start over", "delete all of it", "wipe the list". "item", "quantity", "unit",
+  and "category" are always null for "clear".
 - "update" = user is CORRECTING or adjusting the most recently mentioned item, without
   restating its name — e.g. "sorry, make it 2 litres", "actually make that 3",
   "change it to a kg", "no wait, 5 of those". Use this ONLY when the transcript
@@ -44,19 +61,20 @@ Rules:
 - "item" should be a short, singular, lowercase product name, WITHOUT the unit,
   brand, or descriptive adjectives like "organic" in it (e.g. "water" not "bottle of
   water", "apples" not "organic apples" — "organic" goes in the "organic" field
-  instead). Null if action is "list" or "unknown". For "update", use the context's
-  item name. For "search", this is the product being searched for.
+  instead). Null if action is "list", "clear", or "unknown". For "update", use the
+  context's item name. For "search", this is the product being searched for.
 - "quantity" should be a number if mentioned (e.g. "two bottles" -> 2, "a dozen eggs" -> 12),
   otherwise null. For "add", do not default to 1 — leave null if unstated. For "update",
-  this is the new absolute quantity to set (not an amount to add). Always null for "search".
+  this is the new absolute quantity to set (not an amount to add). Always null for
+  "search" and "clear".
 - "unit" should be a short lowercase unit of measure if one is mentioned (e.g. "kg",
   "liter", "bottle", "pack", "dozen", "can"). Null if no unit was mentioned or the item
-  is just a countable whole thing. Always null for "search".
+  is just a countable whole thing. Always null for "search" and "clear".
 - "category" should be one of: "produce", "dairy", "bakery", "meat", "pantry", "frozen",
   "beverages", "household", "other" — pick the closest fit for the item. For "update",
-  reuse the context's category if available. Null if action is "list" or "unknown".
-  For "search", only set this if the user clearly named a category rather than a
-  specific item (e.g. "show me snacks" -> category "other"/"pantry" as best fit);
+  reuse the context's category if available. Null if action is "list", "clear", or
+  "unknown". For "search", only set this if the user clearly named a category rather
+  than a specific item (e.g. "show me snacks" -> category "other"/"pantry" as best fit);
   otherwise leave null and rely on "item".
 - "brand" is ONLY used for "search". Set it if the user names a brand
   (e.g. "find Colgate toothpaste" -> "Colgate", "show me Amul milk" -> "Amul").

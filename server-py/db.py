@@ -43,8 +43,9 @@ def _find_match(name, unit):
 
 
 def _find_by_name_any_unit(name):
-    # Matches by name only, ignoring unit — a correction like "make it 2 litres"
-    # may be changing the unit itself, so we can't require it to match.
+    # Matches by name only, ignoring unit — used for corrections ("make it
+    # 2 litres") and removals ("delete orange juice"), since neither
+    # naturally restates the item's original unit.
     row = _conn.execute(
         """SELECT * FROM shopping_list
            WHERE LOWER(name) = ?
@@ -83,12 +84,13 @@ def add_item(command: dict):
 
 # action: "remove" — no quantity specified means remove the item entirely;
 # a specified quantity decrements, deleting once it hits zero or below.
+# Matches by name only (ignoring unit) — a user saying "remove orange juice"
+# won't necessarily restate the unit it was added with (e.g. "bottle").
 def remove_item(command: dict):
     item = command.get("item")
     quantity = command.get("quantity")
-    unit = command.get("unit")
 
-    existing = _find_match(item, unit)
+    existing = _find_by_name_any_unit(item)
     if not existing:
         return get_all_items()  # nothing to remove, silent no-op
 
