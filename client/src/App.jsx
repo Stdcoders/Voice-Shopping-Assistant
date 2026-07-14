@@ -103,11 +103,11 @@ export default function App() {
         errorMessage={errorMessage}
       />
 
-      <ShoppingList items={items} />
-
-      <RecommendationsPanel key={refreshKey} onListUpdate={setItems} />
-
-      <SearchPanel voiceResults={voiceSearchResults} onListUpdate={setItems} />
+      <div className="panels-grid">
+        <ShoppingList items={items} />
+        <RecommendationsPanel key={refreshKey} onListUpdate={setItems} />
+        <SearchPanel voiceResults={voiceSearchResults} onListUpdate={setItems} />
+      </div>
     </div>
   );
 }

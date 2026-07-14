@@ -1,13 +1,13 @@
 :root {
-    --bg: #0f1115;
-    --surface: #1a1d24;
-    --surface-hover: #22262f;
-    --border: #2a2e38;
-    --text: #eaecef;
-    --text-muted: #9aa0ac;
-    --accent: #5b8cff;
-    --accent-hover: #4a7aff;
-    --danger: #ff6b6b;
+    --bg: #ffffff;
+    --surface: #f5f5f5;
+    --surface-hover: #ebebeb;
+    --border: #d8d8d8;
+    --text: #111111;
+    --text-muted: #5c5c5c;
+    --accent: #111111;
+    --accent-hover: #333333;
+    --danger: #6b6b6b;
     --radius: 14px;
 }
 
@@ -17,13 +17,13 @@
 
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Georgia",serif;
     background: var(--bg);
     color: var(--text);
 }
 
 .app {
-    max-width: 480px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 32px 20px 64px;
     display: flex;
@@ -49,15 +49,16 @@ body {
 }
 
 .mic-button {
+    font-family: "Georgia",serif;
     font-size: 1.05rem;
     font-weight: 600;
     padding: 18px 36px;
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--accent);
-    color: white;
+    color: var(--bg);
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.1s ease;
+    transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
 }
 
 .mic-button:hover:not(:disabled) {
@@ -73,8 +74,11 @@ body {
     cursor: not-allowed;
 }
 
+/* Recording state: outlined pulse, no color/hue change. */
 .mic-button.recording {
-    background: var(--danger);
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--text);
     animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -82,11 +86,11 @@ body {
 
     0%,
     100% {
-        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.5);
+        box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.25);
     }
 
     50% {
-        box-shadow: 0 0 0 12px rgba(255, 107, 107, 0);
+        box-shadow: 0 0 0 12px rgba(17, 17, 17, 0);
     }
 }
 
@@ -98,12 +102,16 @@ body {
     min-height: 1.4em;
 }
 
+/* Error/processing states distinguished by font-style, not hue. */
 .transcript-display.error {
-    color: var(--danger);
+    color: var(--text);
+    font-style: italic;
+    font-weight: 600;
 }
 
 .transcript-display.processing {
-    color: var(--accent);
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 .shopping-list {
@@ -168,4 +176,242 @@ body {
     text-align: center;
     color: var(--text-muted);
     padding: 32px 20px;
+}
+
+/* ---------------------------------------------------------------------
+   Panels grid: List / Suggestions / Search side by side on wide screens,
+   stacked on narrow ones. .shopping-list already has its own look above;
+   .panel below gives Suggestions + Search the same visual language.
+   --------------------------------------------------------------------- */
+
+.panels-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .panels-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+}
+
+.panel h2 {
+    font-size: 1rem;
+    margin: 0 0 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.panel-section {
+    margin-bottom: 18px;
+}
+
+.panel-section:last-child {
+    margin-bottom: 0;
+}
+
+.panel-section-heading {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.panel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--surface-hover);
+    border-radius: 10px;
+    gap: 10px;
+}
+
+.panel-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.panel-item-name {
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+
+.panel-item-detail {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: none;
+}
+
+.panel-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    font-family: "Georgia",serif;
+    font-size: 0.80rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: var(--bg);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.btn-ghost {
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.btn-ghost:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+}
+
+.btn-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+}
+
+.btn-dismiss:hover {
+    color: var(--text);
+}
+
+.panel-added-label {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    padding: 6px 14px;
+    white-space: nowrap;
+}
+
+.panel-muted {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+/* Distinguished by italics, not hue. */
+.panel-error {
+    color: var(--text);
+    font-size: 0.88rem;
+    font-style: italic;
+    font-weight: 600;
+}
+
+/* Search form */
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.search-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 0.88rem;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-input:focus {
+    border-color: var(--text);
+}
+
+.search-filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.search-filter-row .search-input {
+    flex: 1 1 90px;
+    min-width: 80px;
+    width: auto;
+}
+
+.search-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.search-form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Outlined mono badge, no hue. */
+.badge-sale {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--text-muted);
+    margin-left: 6px;
+    text-transform: none;
 }

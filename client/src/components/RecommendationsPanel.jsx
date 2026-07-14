@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE } from '../api.js';
 
 // --- Config: section metadata per recommendation type -----------------
 const SECTION_META = {
@@ -12,7 +13,7 @@ const SECTION_ORDER = ['running_low', 'frequently_bought_together', 'seasonal', 
 
 // --- API helpers --------------------------------------------------------
 async function fetchRecommendations() {
-  const res = await fetch('/api/recommendations');
+  const res = await fetch(`${API_BASE}/api/recommendations`);
   if (!res.ok) throw new Error(`Failed to load recommendations (${res.status})`);
   const data = await res.json();
   return data.recommendations ?? [];
@@ -29,7 +30,7 @@ function buildAddTranscript(rec) {
 }
 
 async function addItem(rec) {
-  const res = await fetch('/api/parse-text', {
+  const res = await fetch(`${API_BASE}/api/parse-text`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ transcript: buildAddTranscript(rec) }),
@@ -40,7 +41,7 @@ async function addItem(rec) {
 }
 
 async function dismissRecommendation(rec) {
-  const res = await fetch('/api/recommendations/dismiss', {
+  const res = await fetch(`${API_BASE}/api/recommendations/dismiss`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ item: rec.item }),
@@ -113,60 +114,60 @@ export default function RecommendationsPanel({ onListUpdate }) {
 
   if (loading) {
     return (
-      <div style={styles.panel}>
-        <h2 style={styles.heading}>Suggestions</h2>
-        <p style={styles.muted}>Loading suggestions…</p>
+      <div className="panel">
+        <h2>Suggestions</h2>
+        <p className="panel-muted">Loading suggestions…</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.panel}>
-        <h2 style={styles.heading}>Suggestions</h2>
-        <p style={styles.errorText}>{error}</p>
-        <button style={styles.retryBtn} onClick={load}>Retry</button>
+      <div className="panel">
+        <h2>Suggestions</h2>
+        <p className="panel-error">{error}</p>
+        <button className="btn-ghost" onClick={load}>Retry</button>
       </div>
     );
   }
 
   if (grouped.length === 0) {
     return (
-      <div style={styles.panel}>
-        <h2 style={styles.heading}>Suggestions</h2>
-        <p style={styles.muted}>No suggestions right now — check back after a bit more shopping history.</p>
+      <div className="panel">
+        <h2>Suggestions</h2>
+        <p className="panel-muted">No suggestions right now — check back after a bit more shopping history.</p>
       </div>
     );
   }
 
   return (
-    <div style={styles.panel}>
-      <h2 style={styles.heading}>Suggestions</h2>
+    <div className="panel">
+      <h2>Suggestions</h2>
       {grouped.map((section) => (
-        <div key={section.type} style={styles.section}>
-          <h3 style={styles.sectionTitle}>
+        <div key={section.type} className="panel-section">
+          <h3 className="panel-section-heading">
             {section.meta.emoji} {section.meta.title}
           </h3>
-          <ul style={styles.list}>
+          <ul className="panel-list">
             {section.items.map((rec) => {
               const key = recKey(rec);
               const isPending = pendingKeys.has(key);
               return (
-                <li key={key} style={styles.card}>
-                  <div style={styles.cardText}>
-                    <div style={styles.itemName}>{rec.item}</div>
-                    {rec.reason && <div style={styles.reason}>{rec.reason}</div>}
+                <li key={key} className="panel-item">
+                  <div className="panel-item-text">
+                    <div className="panel-item-name">{rec.item}</div>
+                    {rec.reason && <div className="panel-item-detail">{rec.reason}</div>}
                   </div>
-                  <div style={styles.actions}>
+                  <div className="panel-item-actions">
                     <button
-                      style={styles.addBtn}
+                      className="btn-primary"
                       disabled={isPending}
                       onClick={() => handleAdd(rec)}
                     >
                       {isPending ? '…' : 'Add'}
                     </button>
                     <button
-                      style={styles.dismissBtn}
+                      className="btn-dismiss"
                       disabled={isPending}
                       onClick={() => handleDismiss(rec)}
                       aria-label={`Dismiss ${rec.item}`}
@@ -183,103 +184,3 @@ export default function RecommendationsPanel({ onListUpdate }) {
     </div>
   );
 }
-
-// --- Inline styles (self-contained, no CSS file needed) -------------------
-const styles = {
-  panel: {
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '16px 18px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    marginTop: '16px',
-  },
-  heading: {
-    margin: '0 0 12px 0',
-    fontSize: '18px',
-    fontWeight: 600,
-    color: 'black'
-  },
-  section: {
-    marginBottom: '14px',
-  },
-  sectionTitle: {
-    fontSize: '13px',
-    fontWeight: 600,
-    color: 'red',
-    margin: '0 0 8px 0',
-    textTransform: 'uppercase',
-    letterSpacing: '0.03em',
-  },
-  list: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  card: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    background: '#f7f7f8',
-    borderRadius: '8px',
-    padding: '10px 12px',
-  },
-  cardText: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-  },
-  itemName: {
-    fontWeight: 500,
-    fontSize: '14px',
-    color: 'black',
-  },
-  reason: {
-    fontSize: '12px',
-    color: '#777',
-  },
-  actions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    flexShrink: 0,
-    marginLeft: '10px',
-  },
-  addBtn: {
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  dismissBtn: {
-    background: 'transparent',
-    color: '#999',
-    border: 'none',
-    fontSize: '14px',
-    cursor: 'pointer',
-    padding: '4px 6px',
-  },
-  muted: {
-    color: '#888',
-    fontSize: '14px',
-  },
-  errorText: {
-    color: '#c0392b',
-    fontSize: '14px',
-  },
-  retryBtn: {
-    marginTop: '8px',
-    background: '#eee',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-  },
-};

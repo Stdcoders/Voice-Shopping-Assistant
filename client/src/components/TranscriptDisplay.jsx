@@ -1,7 +1,4 @@
-/**
- * Shows the live status of the voice pipeline: what was heard, whether
- * we're still processing, or an error if something went wrong.
- */
+
 export default function TranscriptDisplay({ transcript, status, errorMessage }) {
   if (status === "processing") {
     return (

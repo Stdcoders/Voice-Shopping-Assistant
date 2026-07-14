@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api.js';
 
 // --- API helpers --------------------------------------------------------
 async function searchProducts(filters) {
@@ -9,14 +10,14 @@ async function searchProducts(filters) {
   if (filters.maxPrice) params.set('max_price', filters.maxPrice);
   if (filters.organic) params.set('organic', 'true');
 
-  const res = await fetch(`/api/search?${params.toString()}`);
+  const res = await fetch(`${API_BASE}/api/search?${params.toString()}`);
   if (!res.ok) throw new Error(`Search failed (${res.status})`);
   const data = await res.json();
   return data.results ?? [];
 }
 
 async function addProduct(product) {
-  const res = await fetch('/api/parse-text', {
+  const res = await fetch(`${API_BASE}/api/parse-text`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ transcript: `Add ${product.name}` }),
@@ -94,31 +95,31 @@ export default function SearchPanel({ voiceResults, onListUpdate }) {
   };
 
   return (
-    <div style={styles.panel}>
-      <h2 style={styles.heading}>Search Products</h2>
+    <div className="panel">
+      <h2>Search Products</h2>
 
-      <form onSubmit={runSearch} style={styles.form}>
+      <form onSubmit={runSearch} className="search-form">
         <input
           type="text"
           placeholder="Search by name, e.g. apples"
           value={filters.query}
           onChange={(e) => updateFilter('query', e.target.value)}
-          style={styles.input}
+          className="search-input"
         />
-        <div style={styles.filterRow}>
+        <div className="search-filter-row">
           <input
             type="text"
             placeholder="Brand"
             value={filters.brand}
             onChange={(e) => updateFilter('brand', e.target.value)}
-            style={{ ...styles.input, ...styles.filterInputSmall }}
+            className="search-input"
           />
           <input
             type="number"
             placeholder="Min $"
             value={filters.minPrice}
             onChange={(e) => updateFilter('minPrice', e.target.value)}
-            style={{ ...styles.input, ...styles.filterInputSmall }}
+            className="search-input"
             min="0"
             step="0.01"
           />
@@ -127,11 +128,11 @@ export default function SearchPanel({ voiceResults, onListUpdate }) {
             placeholder="Max $"
             value={filters.maxPrice}
             onChange={(e) => updateFilter('maxPrice', e.target.value)}
-            style={{ ...styles.input, ...styles.filterInputSmall }}
+            className="search-input"
             min="0"
             step="0.01"
           />
-          <label style={styles.checkboxLabel}>
+          <label className="search-checkbox-label">
             <input
               type="checkbox"
               checked={filters.organic}
@@ -140,44 +141,43 @@ export default function SearchPanel({ voiceResults, onListUpdate }) {
             Organic
           </label>
         </div>
-        <div style={styles.formActions}>
-          <button type="submit" style={styles.searchBtn} disabled={loading}>
+        <div className="search-form-actions">
+          <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Searching…' : 'Search'}
           </button>
-          <button type="button" style={styles.clearBtn} onClick={clearFilters}>
+          <button type="button" className="btn-ghost" onClick={clearFilters}>
             Clear
           </button>
         </div>
       </form>
 
-      {error && <p style={styles.errorText}>{error}</p>}
+      {error && <p className="panel-error">{error}</p>}
 
       {hasSearched && !loading && !error && results.length === 0 && (
-        <p style={styles.muted}>No products matched. Try different filters.</p>
+        <p className="panel-muted">No products matched. Try different filters.</p>
       )}
 
       {results.length > 0 && (
-        <ul style={styles.list}>
+        <ul className="panel-list">
           {results.map((product) => {
             const isAdded = addedNames.has(product.name);
             return (
-              <li key={`${product.name}-${product.brand ?? ''}`} style={styles.card}>
-                <div style={styles.cardText}>
-                  <div style={styles.itemName}>
+              <li key={`${product.name}-${product.brand ?? ''}`} className="panel-item">
+                <div className="panel-item-text">
+                  <div className="panel-item-name">
                     {product.name}
-                    {product.organic && <span style={styles.badge}>Organic</span>}
-                    {product.on_sale && <span style={styles.saleBadge}>On Sale</span>}
+                    {product.on_sale && <span className="badge-sale">Sale</span>}
                   </div>
-                  <div style={styles.details}>
-                    {[product.brand, product.size].filter(Boolean).join(' · ')}
-                    {product.price != null && (
-                      <span style={styles.price}> · ${product.price.toFixed(2)}</span>
-                    )}
+                  <div className="panel-item-detail">
+                    {[product.brand, product.size, product.organic && 'Organic']
+                      .filter(Boolean)
+                      .join(' · ')}
+                    {product.price != null && ` · $${product.price.toFixed(2)}`}
                   </div>
                 </div>
                 <button
-                  style={isAdded ? styles.addedBtn : styles.addBtn}
-                  onClick={() => handleAdd(product)}
+                  className={isAdded ? 'panel-added-label' : 'btn-primary'}
+                  onClick={() => !isAdded && handleAdd(product)}
                   disabled={isAdded}
                 >
                   {isAdded ? 'Added ✓' : 'Add'}
@@ -190,160 +190,3 @@ export default function SearchPanel({ voiceResults, onListUpdate }) {
     </div>
   );
 }
-
-// --- Inline styles ----------------------------------------------------------
-const styles = {
-  panel: {
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '16px 18px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    marginTop: '16px',
-    color: 'black'
-  },
-  heading: {
-    margin: '0 0 12px 0',
-    fontSize: '18px',
-    fontWeight: 600,
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    marginBottom: '12px',
-  },
-  input: {
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    padding: '8px 10px',
-    fontSize: '14px',
-    outline: 'none',
-  },
-  filterRow: {
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  filterInputSmall: {
-    flex: '1 1 90px',
-    minWidth: '80px',
-  },
-  checkboxLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    fontSize: '13px',
-    color: 'black',
-    whiteSpace: 'nowrap',
-  },
-  formActions: {
-    display: 'flex',
-    gap: '8px',
-  },
-  searchBtn: {
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  clearBtn: {
-    background: '#eee',
-    color: '#333',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  list: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  card: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    background: '#f7f7f8',
-    borderRadius: '8px',
-    padding: '10px 12px',
-  },
-  cardText: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-    minWidth: 0,
-    color: 'black',
-  },
-  itemName: {
-    fontWeight: 500,
-    fontSize: '14px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  details: {
-    fontSize: '12px',
-    color: '#777',
-  },
-  price: {
-    color: '#2563eb',
-    fontWeight: 500,
-  },
-  badge: {
-    fontSize: '10px',
-    fontWeight: 600,
-    color: '#166534',
-    background: '#dcfce7',
-    borderRadius: '4px',
-    padding: '2px 6px',
-  },
-  saleBadge: {
-    fontSize: '10px',
-    fontWeight: 600,
-    color: '#9a3412',
-    background: '#ffedd5',
-    borderRadius: '4px',
-    padding: '2px 6px',
-  },
-  addBtn: {
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 14px',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    flexShrink: 0,
-    marginLeft: '10px',
-  },
-  addedBtn: {
-    background: '#dcfce7',
-    color: '#166534',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 14px',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'default',
-    flexShrink: 0,
-    marginLeft: '10px',
-  },
-  muted: {
-    color: '#888',
-    fontSize: '14px',
-  },
-  errorText: {
-    color: '#c0392b',
-    fontSize: '14px',
-  },
-};

@@ -1,5 +1,3 @@
-// Preferred display order - categories not in this list (shouldn't happen,
-// but just in case) get appended at the end via the fallback in the sort.
 const CATEGORY_ORDER = [
   "produce",
   "dairy",
@@ -13,15 +11,15 @@ const CATEGORY_ORDER = [
 ];
 
 const CATEGORY_LABELS = {
-  produce: "🥦 Produce",
-  dairy: "🥛 Dairy",
-  bakery: "🍞 Bakery",
-  meat: "🥩 Meat",
-  pantry: "🥫 Pantry",
-  frozen: "🧊 Frozen",
-  beverages: "🥤 Beverages",
-  household: "🧺 Household",
-  other: "🛒 Other",
+  produce: "Produce",
+  dairy: "Dairy",
+  bakery: "Bakery",
+  meat: "Meat",
+  pantry: "Pantry",
+  frozen: "Frozen",
+  beverages: "Beverages",
+  household: "Household",
+  other: "Other",
 };
 
 function groupByCategory(items) {
@@ -35,11 +33,6 @@ function groupByCategory(items) {
     ([a], [b]) => CATEGORY_ORDER.indexOf(a) - CATEGORY_ORDER.indexOf(b)
   );
 }
-
-/**
- * Renders the current shopping list, grouped by category.
- * items: [{ id, name, quantity, unit, category }]
- */
 export default function ShoppingList({ items }) {
   if (items.length === 0) {
     return (

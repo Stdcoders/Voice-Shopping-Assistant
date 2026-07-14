@@ -26,6 +26,29 @@ def _normalize(value):
     return (value or "").strip().lower()
 
 
+def _name_variants(name):
+    """
+    Return normalized (singular, plural) forms of a name for tolerant
+    matching, e.g. "onion" and "onions" resolve to the same pair.
+    Naive suffix-based — doesn't handle irregular plurals (tomato/tomatoes,
+    knife/knives), but covers the common case cheaply.
+    """
+    norm = _normalize(name)
+    if norm.endswith("s"):
+        return norm[:-1], norm
+    return norm, norm + "s"
+
+
+def _canonical_name(name):
+    """
+    Canonical (singular) form of a name, used when inserting new rows so
+    that "onion" and "onions" converge on the same stored name over time
+    instead of creating parallel duplicate entries.
+    """
+    singular, _ = _name_variants(name)
+    return singular
+
+
 def get_all_items():
     rows = _conn.execute(
         "SELECT * FROM shopping_list ORDER BY category, name"
@@ -33,11 +56,13 @@ def get_all_items():
     return [dict(row) for row in rows]
 
 
-def _find_match(name, unit):
+def _find_match(name, unit=None):
+    # unit is intentionally not used as a filter — matching by name is
+    # sufficient, consistent with how removal/update already behave.
+    singular, plural = _name_variants(name)
     row = _conn.execute(
-        """SELECT * FROM shopping_list
-           WHERE LOWER(name) = ? AND IFNULL(LOWER(unit), '') = ?""",
-        (_normalize(name), _normalize(unit)),
+        "SELECT * FROM shopping_list WHERE LOWER(name) IN (?, ?)",
+        (singular, plural),
     ).fetchone()
     return dict(row) if row else None
 
@@ -46,12 +71,13 @@ def _find_by_name_any_unit(name):
     # Matches by name only, ignoring unit — used for corrections ("make it
     # 2 litres") and removals ("delete orange juice"), since neither
     # naturally restates the item's original unit.
+    singular, plural = _name_variants(name)
     row = _conn.execute(
         """SELECT * FROM shopping_list
-           WHERE LOWER(name) = ?
+           WHERE LOWER(name) IN (?, ?)
            ORDER BY updated_at DESC
            LIMIT 1""",
-        (_normalize(name),),
+        (singular, plural),
     ).fetchone()
     return dict(row) if row else None
 
@@ -76,7 +102,7 @@ def add_item(command: dict):
         _conn.execute(
             """INSERT INTO shopping_list (name, quantity, unit, category)
                VALUES (?, ?, ?, ?)""",
-            (item, qty, unit, category),
+            (_canonical_name(item), qty, unit, category),
         )
     _conn.commit()
     return get_all_items()
@@ -131,7 +157,7 @@ def update_item(command: dict):
         _conn.execute(
             """INSERT INTO shopping_list (name, quantity, unit, category)
                VALUES (?, ?, ?, ?)""",
-            (item, 1 if quantity is None else quantity, unit, category),
+            (_canonical_name(item), 1 if quantity is None else quantity, unit, category),
         )
     _conn.commit()
     return get_all_items()
