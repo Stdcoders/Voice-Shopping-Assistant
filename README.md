@@ -7,8 +7,6 @@ Built as a technical assessment project (React + FastAPI + Groq).
 **Live app:** https://voice-shopping-assistant-teal.vercel.app/
 **Backend API:** https://voice-shopping-assistant-erfb.onrender.com ([`/health`](https://voice-shopping-assistant-erfb.onrender.com/health))
 
-> Note: the backend runs on Render's free tier, which spins down after periods of inactivity and uses an ephemeral filesystem. The first request after idle time may take 30–50s to respond, and the shopping list/history reset on redeploy or restart. See [Not implemented / known limitations](#not-implemented--known-limitations).
-
 ---
 
 ## Architecture
