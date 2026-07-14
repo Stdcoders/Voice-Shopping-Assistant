@@ -109,8 +109,4 @@ VITE_API_URL=https://voice-shopping-assistant-erfb.onrender.com npm run build
 
 ---
 
-## Approach
-
-The core challenge was making voice input forgiving of natural phrasing without hand-writing NLP rules. Rather than keyword-matching, raw transcripts are sent to an LLM (Groq Llama 3.3, JSON-mode) with a strict system prompt defining the command schema, so "I need apples" and "add apples" resolve identically, and multilingual input is normalized to English before hitting the catalog. A lightweight context object lets short corrections ("make it 2kg") resolve against the last command. Smart suggestions are derived entirely from a SQLite event log rather than a separate ML model — running-low detection uses historical add intervals, substitutes and seasonality come from the product catalog, and a cold-start staples list covers new users. This kept the system explainable and cheap to run within the time budget. The app is deployed (Vercel frontend, Render backend), though on free-tier hosting without multi-user support or persistent storage across restarts.
-
 *(~155 words)*
