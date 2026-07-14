@@ -107,5 +107,3 @@ VITE_API_URL=https://voice-shopping-assistant-erfb.onrender.com npm run build
 | `POST` | `/api/recommendations/dismiss` | Dismiss/snooze a suggested item (`{ "item": "..." }`) |
 
 ---
-
-*(~155 words)*
