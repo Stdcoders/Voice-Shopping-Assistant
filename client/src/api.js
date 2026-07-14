@@ -14,8 +14,6 @@ export const API_BASE = import.meta.env.VITE_API_URL || "";
  */
 export async function sendVoiceCommand(audioBlob) {
   const formData = new FormData();
-  // Filename/extension here is just a hint for the backend - MediaRecorder
-  // typically produces webm in Chrome/Edge.
   formData.append("audio", audioBlob, "recording.webm");
 
   const response = await fetch(`${API_BASE}/api/voice-command`, {
