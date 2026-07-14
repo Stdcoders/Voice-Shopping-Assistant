@@ -1,52 +1,127 @@
 # Voice Command Shopping Assistant
 
-A voice-controlled shopping list manager. 
-Users speak commands ("add milk", "remove eggs", "find toothpaste under $5"), and the app transcribes, interprets, and acts on them — while surfacing smart product suggestions based on shopping history.
+A voice-controlled shopping list manager. Users speak commands ("add milk", "remove eggs", "find toothpaste under $5"), and the app transcribes, interprets, and acts on them — while surfacing smart product suggestions based on shopping history.
 
-# Live URL 
-Live app: https://voice-shopping-assistant-teal.vercel.app/
-Backend API: https://voice-shopping-assistant-erfb.onrender.com (/health)
+Built as a technical assessment project (React + FastAPI + Groq).
 
-# To be noted 
+**Live app:** https://voice-shopping-assistant-teal.vercel.app/
+**Backend API:** https://voice-shopping-assistant-erfb.onrender.com ([`/health`](https://voice-shopping-assistant-erfb.onrender.com/health))
 
-The backend service - Render is on free tier. It's instances spin down after inactivity, so the SQLite Database will get reset on reploy or restart.
+> Note: the backend runs on Render's free tier, which spins down after periods of inactivity and uses an ephemeral filesystem. The first request after idle time may take 30–50s to respond, and the shopping list/history reset on redeploy or restart. See [Not implemented / known limitations](#not-implemented--known-limitations).
 
-# Architecture
+---
 
+## Architecture
+
+```
 client/       React 18 + Vite frontend (mic capture, list UI, search, recommendations)
 server-py/    FastAPI backend (transcription, command parsing, list state, recommendations)
+```
 
-# Pipeline
+**Pipeline:** browser records audio → `POST /api/voice-command` → Groq Whisper (`whisper-large-v3-turbo`) transcribes → Groq Llama (`llama-3.3-70b-versatile`) parses the transcript into a structured command (`action`, `item`, `quantity`, `unit`, `category`, `brand`, `organic`, `min_price`, `max_price`) → command is applied against a SQLite-backed shopping list.
 
-Browser records audio → POST /api/voice-command → Groq Whisper (whisper-large-v3-turbo) transcribes → Groq Llama (llama-3.3-70b-versatile) parses the transcript into a structured command (action, item, quantity, unit, category, brand, organic, min_price, max_price) → command is applied against a SQLite-backed shopping list.
+| Layer | Tech |
+|---|---|
+| Frontend | React 18, Vite |
+| Backend | FastAPI, Uvicorn |
+| Speech-to-text | Groq Whisper (`whisper-large-v3-turbo`) |
+| Command parsing | Groq Llama 3.3 70B (JSON-mode, structured output) |
+| Storage | SQLite (`shopping_list.db`, `history` table) |
+| Product catalog | Static JSON (`product_catalog.json`) |
 
-# Features 
+---
 
+## Features
 
-# Setup
-Backend (server-py/)
+**Voice input**
+- Voice command recognition via Groq Whisper, with free-form phrasing handled by the LLM parser rather than fixed keyword matching (e.g. "I want to buy bananas" and "add bananas" both resolve to the same `add` command).
+- Multilingual input: Whisper auto-detects the spoken language and transcribes it; the parser prompt explicitly instructs the LLM to understand the transcript in its original language and always translate the extracted `item`/`category` fields into English (needed since they're matched against an English-only catalog). Brand names are kept as-is.
+- Context-aware corrections: a lightweight in-memory `context` module remembers the last applied command so follow-ups like "make it 2 litres" resolve without repeating the item name.
 
+**Smart suggestions** (`recommendations.py`)
+- *Running low*: flags items the user has added at least twice before, once the time since the last add exceeds ~80% of their historical average gap.
+- *Substitutes*: for items already on the list, surfaces catalog-defined alternatives (e.g. milk → almond/oat/soy milk).
+- *Seasonal / on sale*: pulls from the product catalog's `in_season_months` and `on_sale` fields.
+- *Frequently bought together*: co-occurrence of items added on the same day.
+- *Cold start*: falls back to a fixed staples list (milk, bread, eggs, bananas, rice) until there's enough history (5+ add events).
+- Suggestions can be dismissed, which snoozes that item for 3 days.
+
+**Shopping list management**
+- Add / remove / update / clear, all voice- or text-driven, with quantity accumulation (adding "milk" twice sums quantities rather than duplicating rows) and simple singular/plural name matching.
+
+**Voice-activated search**
+- Search by item name, brand, category, price range (`min_price`/`max_price` parsed from phrases like "under $5"), and organic flag, run against the local product catalog.
+
+**UI/UX**
+- Minimal React interface: mic button, live transcript display, shopping list, search panel, recommendations panel.
+- Basic error handling: oversized/empty audio, failed transcriptions, and failed parses return descriptive errors instead of silent failures.
+
+---
+
+## Not implemented / known limitations
+
+Being upfront about what's *not* here, since it matters for review:
+
+- **Deployed on free-tier hosting.** Frontend is on Vercel, backend on Render's free tier. Render's free instances spin down after inactivity (first request after idle can take 30–50s) and use an ephemeral filesystem, so the SQLite-backed shopping list and history reset on redeploy or restart. Fine for review/demo purposes; a production deployment would need a paid instance and persistent/managed database (e.g. Render Postgres).
+- **No authentication** — the app is single-user/local by design; the list and command context aren't scoped per user.
+- **`context.py` is in-memory and single-instance** — the "last command" used for follow-up corrections is a module-level global, not persisted or safe across multiple server workers.
+- **SQLite storage** — fine for a local/demo deployment, not intended for concurrent multi-user production use.
+- **No automated tests.**
+
+---
+
+## Setup
+
+### Backend (`server-py/`)
+
+```bash
 cd server-py
 python -m venv env
 source env/bin/activate    # Windows: env\Scripts\activate
 pip install -r requirements.txt
+```
 
-.env -> GROQ_API_KEY=your_groq_api_key_here
+Create `server-py/.env`:
+```
+GROQ_API_KEY=your_groq_api_key_here
+```
 
-Run Command -> uvicorn main:app --reload --port 3001
+Run:
+```bash
+uvicorn main:app --reload --port 3001
+```
 
-Frontend (client/)
+### Frontend (`client/`)
 
+```bash
 cd client
 npm install
 npm run dev
+```
 
-# API Reference
+By default the Vite dev server proxies API calls to `localhost:3001`. For a production build pointing at the deployed backend, set `VITE_API_URL` (no trailing slash) before building — this is how the live Vercel deployment is configured:
+```bash
+VITE_API_URL=https://voice-shopping-assistant-erfb.onrender.com npm run build
+```
 
-GET | /health | Health check
-POST | /api/voice-command| Upload audio (multipart/form-data, field audio) → transcribe → parse → apply
-POST | /api/parse-text| Same pipeline, skipping transcription ({ "transcript": "..." })
-GET | /api/items | Current shopping list
-GET | /api/search | Product search (query, brand, category, min_price, max_price, organic)
-GET | /api/recommendations | Current smart suggestions
-POST | /api/recommendations/dismiss | Dismiss/snooze a suggested item ({ "item": "..." })
+---
+
+## API Reference
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `POST` | `/api/voice-command` | Upload audio (`multipart/form-data`, field `audio`) → transcribe → parse → apply |
+| `POST` | `/api/parse-text` | Same pipeline, skipping transcription (`{ "transcript": "..." }`) |
+| `GET` | `/api/items` | Current shopping list |
+| `GET` | `/api/search` | Product search (`query`, `brand`, `category`, `min_price`, `max_price`, `organic`) |
+| `GET` | `/api/recommendations` | Current smart suggestions |
+| `POST` | `/api/recommendations/dismiss` | Dismiss/snooze a suggested item (`{ "item": "..." }`) |
+
+---
+
+## Approach
+
+The core challenge was making voice input forgiving of natural phrasing without hand-writing NLP rules. Rather than keyword-matching, raw transcripts are sent to an LLM (Groq Llama 3.3, JSON-mode) with a strict system prompt defining the command schema, so "I need apples" and "add apples" resolve identically, and multilingual input is normalized to English before hitting the catalog. A lightweight context object lets short corrections ("make it 2kg") resolve against the last command. Smart suggestions are derived entirely from a SQLite event log rather than a separate ML model — running-low detection uses historical add intervals, substitutes and seasonality come from the product catalog, and a cold-start staples list covers new users. This kept the system explainable and cheap to run within the time budget. The app is deployed (Vercel frontend, Render backend), though on free-tier hosting without multi-user support or persistent storage across restarts.
+
+*(~155 words)*
