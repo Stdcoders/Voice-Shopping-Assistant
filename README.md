@@ -2,7 +2,6 @@
 
 A voice-controlled shopping list manager. Users speak commands ("add milk", "remove eggs", "find toothpaste under $5"), and the app transcribes, interprets, and acts on them — while surfacing smart product suggestions based on shopping history.
 
-Built as a technical assessment project (React + FastAPI + Groq).
 
 **Live app:** https://voice-shopping-assistant-teal.vercel.app/
 **Backend API:** https://voice-shopping-assistant-erfb.onrender.com ([`/health`](https://voice-shopping-assistant-erfb.onrender.com/health))
