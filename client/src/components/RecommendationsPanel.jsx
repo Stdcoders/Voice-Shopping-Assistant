@@ -19,9 +19,6 @@ async function fetchRecommendations() {
   return data.recommendations ?? [];
 }
 
-// There's no direct "add item" endpoint — adding only happens through the
-// NLP pipeline (/api/parse-text), so we build a natural-language transcript
-// and let parse_command handle it exactly like a real voice/text command.
 function buildAddTranscript(rec) {
   const { suggested_quantity: qty, suggested_unit: unit } = rec;
   if (qty && unit) return `Add ${qty} ${unit} of ${rec.item}`;
