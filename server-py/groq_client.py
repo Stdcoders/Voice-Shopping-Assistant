@@ -3,8 +3,7 @@ from groq import AsyncGroq
 
 if not os.environ.get("GROQ_API_KEY"):
     print(
-        "[groq_client] GROQ_API_KEY is not set. Requests to Groq will fail "
-        "until you add it to your .env file."
+        "[groq_client] GROQ_API_KEY is not set."
     )
 
 client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))

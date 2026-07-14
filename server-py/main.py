@@ -16,6 +16,7 @@ import history
 import recommendations
 import catalog
 
+
 app = FastAPI(title="Voice Shopping Assistant API")
 
 app.add_middleware(
@@ -26,14 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MAX_AUDIO_BYTES = 10 * 1024 * 1024  # 10MB, matches the old multer limit
+MAX_AUDIO_BYTES = 10 * 1024 * 1024  
 
 
 @app.on_event("startup")
 async def on_startup():
-    # db's own tables are already initialized elsewhere (existing behavior).
-    # This just adds the history table alongside it, in the same DB file,
-    # and loads the static product catalog used by search + recommendations.
     history.init_history_table()
     catalog.load_catalog()
 
@@ -44,21 +42,10 @@ async def health():
 
 
 def _item_name(item: dict) -> str:
-    """
-    db.get_all_items() rows may key the item name as "name" or "item"
-    depending on how db.py shaped it. Try both so recommendations logic
-    doesn't silently break if that ever shifts.
-    """
     return item.get("name") or item.get("item") or ""
 
 
 def _needs_item(command: dict) -> bool:
-    """
-    add/update/remove all require a concrete item name. If the LLM couldn't
-    extract one (e.g. "remove everything from the list" — there's no single
-    item to resolve), item comes back as None/"" and must not be allowed to
-    flow into db.*/history.log_event(), which assume a real string.
-    """
     action = command.get("action")
     if action not in ("add", "update", "remove"):
         return False
@@ -67,11 +54,6 @@ def _needs_item(command: dict) -> bool:
 
 
 def apply_command(command: dict):
-    """
-    Applies a parsed command to the DB, updates the "last command" context for
-    resolving future corrections, logs the action to history for the
-    recommendations engine, and always returns the current full list.
-    """
     action = command.get("action")
 
     if action == "add":
@@ -100,7 +82,7 @@ def apply_command(command: dict):
 
     if action == "remove":
         result_list = db.remove_item(command)
-        context.clear_last_command()  # item's gone, nothing sensible to correct anymore
+        context.clear_last_command()  
         history.log_event(
             command.get("item", ""),
             action="remove",
@@ -112,31 +94,16 @@ def apply_command(command: dict):
 
     if action == "clear":
         result_list = db.clear_list()
-        context.clear_last_command()  # list is empty, nothing left to correct
+        context.clear_last_command()  
         history.log_event("__all__", action="clear")
         return result_list
 
-    # "list" or "unknown"
     return db.get_all_items()
 
 
 def handle_search(command: dict) -> List[dict]:
-    """
-    Search is read-only: it queries the product catalog and never touches
-    the shopping list, correction context, or history log.
-    """
     category = command.get("category")
     if command.get("item"):
-        # The prompt tells the LLM to leave "category" null when a specific
-        # item is named (query alone should carry the search), but it
-        # doesn't always comply — it sometimes fills in a best-guess category
-        # anyway. That gets AND'd with the query filter in catalog.search(),
-        # and if the guessed category string doesn't exactly match how the
-        # catalog actually categorizes that product, it wrongly excludes
-        # real matches (e.g. "toothpaste" + guessed category "household"
-        # returning zero results even though toothpaste exists under a
-        # different category). Ignoring category whenever a specific item
-        # was searched enforces the intended behavior in code.
         category = None
 
     return catalog.search(
@@ -176,7 +143,7 @@ async def voice_command(audio: UploadFile = File(...)):
             }
 
         command = await parse_command(transcript, context.get_last_command())
-
+        print(f"[main] parsed command: {command}")
         if command.get("action") == "search":
             results = handle_search(command)
             return {"transcript": transcript, **command, "results": results}
