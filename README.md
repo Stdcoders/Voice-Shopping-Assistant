@@ -56,15 +56,6 @@ server-py/    FastAPI backend (transcription, command parsing, list state, recom
 
 ---
 
-## Not implemented / known limitations
-
-Being upfront about what's *not* here, since it matters for review:
-
-- **Deployed on free-tier hosting.** Frontend is on Vercel, backend on Render's free tier. Render's free instances spin down after inactivity (first request after idle can take 30–50s) and use an ephemeral filesystem, so the SQLite-backed shopping list and history reset on redeploy or restart. Fine for review/demo purposes; a production deployment would need a paid instance and persistent/managed database (e.g. Render Postgres).
-- **No authentication** — the app is single-user/local by design; the list and command context aren't scoped per user.
-- **`context.py` is in-memory and single-instance** — the "last command" used for follow-up corrections is a module-level global, not persisted or safe across multiple server workers.
-- **SQLite storage** — fine for a local/demo deployment, not intended for concurrent multi-user production use.
-- **No automated tests.**
 
 ---
 
