@@ -30,29 +30,11 @@ server-py/    FastAPI backend (transcription, command parsing, list state, recom
 
 ## Features
 
-**Voice input**
-- Voice command recognition via Groq Whisper, with free-form phrasing handled by the LLM parser rather than fixed keyword matching (e.g. "I want to buy bananas" and "add bananas" both resolve to the same `add` command).
-- Multilingual input: Whisper auto-detects the spoken language and transcribes it; the parser prompt explicitly instructs the LLM to understand the transcript in its original language and always translate the extracted `item`/`category` fields into English (needed since they're matched against an English-only catalog). Brand names are kept as-is.
-- Context-aware corrections: a lightweight in-memory `context` module remembers the last applied command so follow-ups like "make it 2 litres" resolve without repeating the item name.
-
-**Smart suggestions** (`recommendations.py`)
-- *Running low*: flags items the user has added at least twice before, once the time since the last add exceeds ~80% of their historical average gap.
-- *Substitutes*: for items already on the list, surfaces catalog-defined alternatives (e.g. milk → almond/oat/soy milk).
-- *Seasonal / on sale*: pulls from the product catalog's `in_season_months` and `on_sale` fields.
-- *Frequently bought together*: co-occurrence of items added on the same day.
-- *Cold start*: falls back to a fixed staples list (milk, bread, eggs, bananas, rice) until there's enough history (5+ add events).
-- Suggestions can be dismissed, which snoozes that item for 3 days.
-
-**Shopping list management**
-- Add / remove / update / clear, all voice- or text-driven, with quantity accumulation (adding "milk" twice sums quantities rather than duplicating rows) and simple singular/plural name matching.
-
-**Voice-activated search**
-- Search by item name, brand, category, price range (`min_price`/`max_price` parsed from phrases like "under $5"), and organic flag, run against the local product catalog.
-
-**UI/UX**
-- Minimal React interface: mic button, live transcript display, shopping list, search panel, recommendations panel.
-- Basic error handling: oversized/empty audio, failed transcriptions, and failed parses return descriptive errors instead of silent failures.
-
+Voice commands — flexible phrasing ("I need apples" = "add apples"), multilingual input
+Smart suggestions — running-low reminders, substitutes, seasonal/on-sale picks, based on your history
+List management — add/remove/update items by voice or text
+Voice search — find items by name, brand, price range, or category
+Simple UI — mic button, live transcript, list, search, and suggestions panel
 ---
 
 
@@ -86,12 +68,6 @@ cd client
 npm install
 npm run dev
 ```
-
-By default the Vite dev server proxies API calls to `localhost:3001`. For a production build pointing at the deployed backend, set `VITE_API_URL` (no trailing slash) before building — this is how the live Vercel deployment is configured:
-```bash
-VITE_API_URL=https://voice-shopping-assistant-erfb.onrender.com npm run build
-```
-
 ---
 
 ## API Reference
