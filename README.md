@@ -29,12 +29,13 @@ server-py/    FastAPI backend (transcription, command parsing, list state, recom
 ---
 
 ## Features
-
+```
 Voice commands — flexible phrasing ("I need apples" = "add apples"), multilingual input
 Smart suggestions — running-low reminders, substitutes, seasonal/on-sale picks, based on your history
 List management — add/remove/update items by voice or text
 Voice search — find items by name, brand, price range, or category
 Simple UI — mic button, live transcript, list, search, and suggestions panel
+```
 ---
 
 
