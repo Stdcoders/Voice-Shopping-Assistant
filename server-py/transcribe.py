@@ -9,10 +9,6 @@ async def transcribe_audio(audio_bytes: bytes, original_name: str = "audio.webm"
     """
     Transcribes an audio buffer using Groq's hosted Whisper model.
 
-    Args:
-        audio_bytes: raw audio bytes (webm/wav/mp3/etc.)
-        original_name: original filename, used to infer extension
-
     Returns:
         The transcribed text.
     """

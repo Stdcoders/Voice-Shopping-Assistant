@@ -28,8 +28,6 @@ async function addProduct(product) {
 }
 
 // --- Component ------------------------------------------------------------
-// voiceResults: results array pushed down from App.jsx when a voice/text
-// command comes back with action === "search" (or null when none yet).
 export default function SearchPanel({ voiceResults, onListUpdate }) {
   const [filters, setFilters] = useState({
     query: '',
@@ -44,7 +42,6 @@ export default function SearchPanel({ voiceResults, onListUpdate }) {
   const [hasSearched, setHasSearched] = useState(Boolean(voiceResults));
   const [addedNames, setAddedNames] = useState(() => new Set());
 
-  // A voice/text search command landed in App.jsx — reflect it here too.
   useEffect(() => {
     if (voiceResults) {
       setResults(voiceResults);

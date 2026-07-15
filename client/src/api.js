@@ -1,9 +1,8 @@
-// In local dev, VITE_API_URL is unset, so API_BASE is "" and requests stay
-// relative (e.g. "/api/items"), which Vite's dev proxy forwards to
-// localhost:3001. In production (Vercel), set VITE_API_URL to the deployed
-// backend's URL (e.g. https://your-app.onrender.com) with NO trailing
-// slash — Vercel has no dev proxy, so requests must be absolute.
-export const API_BASE = import.meta.env.VITE_API_URL || "";
+const PRODUCTION_API_FALLBACK = "https://voice-shopping-assistant-erfb.onrender.com";
+ 
+export const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PRODUCTION_API_FALLBACK : "");
 
 /**
  * Uploads a recorded audio blob to the backend, which transcribes it (Groq Whisper)
@@ -14,8 +13,6 @@ export const API_BASE = import.meta.env.VITE_API_URL || "";
  */
 export async function sendVoiceCommand(audioBlob) {
   const formData = new FormData();
-  // Filename/extension here is just a hint for the backend - MediaRecorder
-  // typically produces webm in Chrome/Edge.
   formData.append("audio", audioBlob, "recording.webm");
 
   const response = await fetch(`${API_BASE}/api/voice-command`, {

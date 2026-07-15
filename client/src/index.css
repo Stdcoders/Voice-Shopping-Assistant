@@ -73,8 +73,6 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
-
-/* Recording state: outlined pulse, no color/hue change. */
 .mic-button.recording {
     background: transparent;
     color: var(--text);
@@ -102,7 +100,6 @@ body {
     min-height: 1.4em;
 }
 
-/* Error/processing states distinguished by font-style, not hue. */
 .transcript-display.error {
     color: var(--text);
     font-style: italic;
@@ -178,11 +175,6 @@ body {
     padding: 32px 20px;
 }
 
-/* ---------------------------------------------------------------------
-   Panels grid: List / Suggestions / Search side by side on wide screens,
-   stacked on narrow ones. .shopping-list already has its own look above;
-   .panel below gives Suggestions + Search the same visual language.
-   --------------------------------------------------------------------- */
 
 .panels-grid {
     width: 100%;
@@ -339,7 +331,6 @@ body {
     font-size: 0.88rem;
 }
 
-/* Distinguished by italics, not hue. */
 .panel-error {
     color: var(--text);
     font-size: 0.88rem;
@@ -347,7 +338,6 @@ body {
     font-weight: 600;
 }
 
-/* Search form */
 
 .search-form {
     display: flex;
@@ -403,7 +393,6 @@ body {
     gap: 8px;
 }
 
-/* Outlined mono badge, no hue. */
 .badge-sale {
     font-size: 0.65rem;
     font-weight: 600;
