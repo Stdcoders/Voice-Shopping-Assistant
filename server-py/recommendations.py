@@ -1,13 +1,3 @@
-"""
-recommendations.py
-
-Recommendation engine for the Smart Suggestions feature.
-Built entirely on top of the `history` event log (see history.py) —
-no extra tables needed. "Dismiss" is just logged as another event type
-via history.log_event(item, "dismiss"), which doubles as snooze tracking.
-
-Drop this into server-py/ alongside history.py, db.py, main.py.
-"""
 
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
@@ -17,13 +7,12 @@ from typing import List, Dict, Any, Optional
 import history
 import catalog
 
-# ---- Tunables -------------------------------------------------------
 
-MIN_ADD_EVENTS_FOR_PATTERN = 2       # need at least 2 adds to compute an interval
-RUNNING_LOW_THRESHOLD_RATIO = 0.8    # suggest once 80% of the usual gap has passed
-DISMISS_SNOOZE_DAYS = 3              # ignore an item for this many days after dismiss
-COLD_START_MIN_TOTAL_ADDS = 5        # below this many total add events, show fallback staples
-FREQUENTLY_BOUGHT_TOGETHER_WINDOW_DAYS = 0  # 0 = same calendar day counts as "same trip"
+MIN_ADD_EVENTS_FOR_PATTERN = 2       
+RUNNING_LOW_THRESHOLD_RATIO = 0.8    
+DISMISS_SNOOZE_DAYS = 3              
+COLD_START_MIN_TOTAL_ADDS = 5        
+FREQUENTLY_BOUGHT_TOGETHER_WINDOW_DAYS = 0 
 MAX_SUGGESTIONS_PER_TYPE = 5
 
 COLD_START_STAPLES = [
@@ -43,10 +32,7 @@ def _normalize(name: str) -> str:
     return name.strip().lower()
 
 
-# ---- Dismiss / snooze -------------------------------------------------
-
 def dismiss_recommendation(item_name: str):
-    """Call this when the user dismisses a suggestion from the UI."""
     history.log_event(item_name, action="dismiss")
 
 
@@ -58,8 +44,6 @@ def _recently_dismissed(item_name: str, all_history: List[Dict[str, Any]]) -> bo
                 return True
     return False
 
-
-# ---- Running low --------------------------------------------------------
 
 def _most_common_quantity_unit(add_events: List[Dict[str, Any]]):
     pairs = [
@@ -87,11 +71,11 @@ def _running_low_recommendations(
 
     for item_name, events in by_item.items():
         if item_name in current_items_normalized:
-            continue  # already on the list
+            continue  
         if len(events) < MIN_ADD_EVENTS_FOR_PATTERN:
-            continue  # not enough data to see a pattern
+            continue  
         if _recently_dismissed(item_name, all_history):
-            continue  # snoozed
+            continue  
 
         events_sorted = sorted(events, key=lambda e: _parse_ts(e["timestamp"]))
         timestamps = [_parse_ts(e["timestamp"]) for e in events_sorted]
@@ -121,14 +105,11 @@ def _running_low_recommendations(
                 "suggested_unit": unit,
             })
 
-    # Most overdue first
     suggestions.sort(
         key=lambda s: s["reason"], reverse=False
     )
     return suggestions[:MAX_SUGGESTIONS_PER_TYPE]
 
-
-# ---- Cold start ----------------------------------------------------------
 
 def _cold_start_recommendations(
     current_items_normalized: set,
@@ -136,7 +117,7 @@ def _cold_start_recommendations(
 ) -> List[Dict[str, Any]]:
     total_adds = sum(1 for row in all_history if row["action"] == "add")
     if total_adds >= COLD_START_MIN_TOTAL_ADDS:
-        return []  # enough history, no need for generic fallback
+        return []  
 
     suggestions = []
     for staple in COLD_START_STAPLES:
@@ -156,8 +137,6 @@ def _cold_start_recommendations(
     return suggestions[:MAX_SUGGESTIONS_PER_TYPE]
 
 
-# ---- Frequently bought together ------------------------------------------
-
 def _frequently_bought_together(
     current_items_normalized: set,
     all_history: List[Dict[str, Any]],
@@ -165,7 +144,6 @@ def _frequently_bought_together(
     if not current_items_normalized:
         return []
 
-    # Build day -> set(items added that day)
     day_to_items = defaultdict(set)
     day_to_categories = {}
     for row in all_history:
@@ -200,8 +178,6 @@ def _frequently_bought_together(
     return suggestions
 
 
-# ---- Seasonal (and on-sale) -----------------------------------------------
-
 def _seasonal_recommendations(
     current_items_normalized: set,
     all_history: List[Dict[str, Any]],
@@ -209,7 +185,6 @@ def _seasonal_recommendations(
     in_season = {p["name"]: p for p in catalog.get_in_season()}
     on_sale = {p["name"]: p for p in catalog.get_on_sale()}
 
-    # Union of names, preferring an "in season AND on sale" reason when both apply
     all_names = set(in_season.keys()) | set(on_sale.keys())
 
     suggestions = []
@@ -242,17 +217,10 @@ def _seasonal_recommendations(
     return suggestions[:MAX_SUGGESTIONS_PER_TYPE]
 
 
-# ---- Substitutes ------------------------------------------------------
-
 def _substitute_recommendations(
     current_items_normalized: set,
     all_history: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """
-    For each item currently on the list, surface catalog substitutes
-    the user isn't already buying — e.g. list has "milk" -> suggest
-    "almond milk" as an alternative.
-    """
     suggestions = []
     for item_name in current_items_normalized:
         substitute_names = catalog.get_substitutes(item_name)
@@ -277,16 +245,7 @@ def _substitute_recommendations(
     return suggestions[:MAX_SUGGESTIONS_PER_TYPE]
 
 
-# ---- Public entry point --------------------------------------------------
-
 def get_recommendations(current_items: List[str]) -> List[Dict[str, Any]]:
-    """
-    current_items: list of item names currently on the shopping list
-    (raw casing is fine, this normalizes internally).
-
-    Returns a flat list of suggestion dicts, deduped, each tagged with
-    a "type": "running_low" | "cold_start" | "frequently_bought_together"
-    """
     current_normalized = {_normalize(i) for i in current_items}
     all_history = history.get_all_history()
 

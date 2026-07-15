@@ -1,9 +1,3 @@
-"""
-history.py
-
-Event log for shopping actions (add/remove/update), used to power
-product recommendations.
-"""
 
 import os
 import sqlite3
@@ -20,7 +14,6 @@ def get_connection():
 
 
 def init_history_table():
-    """Call this once on startup (same place db.py's init runs)."""
     conn = get_connection()
     conn.execute(
         """

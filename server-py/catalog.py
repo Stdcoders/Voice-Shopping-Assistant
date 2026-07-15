@@ -1,12 +1,3 @@
-"""
-catalog.py
-
-Loads product_catalog.json once at startup and exposes small query
-helpers used by:
-  - recommendations.py (Seasonal Recommendations, Substitutes)
-  - search.py (Section 4: Item Search + Price Filtering)
-"""
-
 import os
 import json
 from datetime import datetime
