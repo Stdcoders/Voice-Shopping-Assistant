@@ -35,6 +35,7 @@ Smart suggestions — running-low reminders, substitutes, seasonal/on-sale picks
 List management — add/remove/update items by voice or text
 Voice search — find items by name, brand, price range, or category
 Simple UI — mic button, live transcript, list, search, and suggestions panel
+Multilingual Input - Works on 4 languages : English, Hindi, Marathi and Tamil
 ```
 ---
 
